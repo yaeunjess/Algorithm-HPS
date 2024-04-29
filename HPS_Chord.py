@@ -11,16 +11,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import wave
 import math
-import tensorflow as tf
 
 path     = "./"
-filename = 'Am_AcusticPlug3_3.wav'
+filename = 'G-DDDD.wav' 
 
 note_threshold = 5_000.0    # 120   # 50_000.0   #  3_000.0
 
 # Parameters
 sample_rate  = 44100                     # Sampling Frequency
-fft_len      = 22050   # 2048            # Length of the FFT window
+fft_len      = 10000  # 22050   # 2048            # Length of the FFT window
 overlap      = 0.5                       # Hop overlap percentage between windows
 hop_length   = int(fft_len*(1-overlap))  # Number of samples between successive frames
 
@@ -179,62 +178,91 @@ def find_nearest_note(ordered_note_freq, freq):
             break    
     return final_note_name
 
-# 기타 코드와 주파수에 대한 딕셔너리 생성
+# 기타 조에 대한 딕셔너리 생성
+def get_all_key_freq():
+    keys_freq = {
+        "A": ['A_2', 'E_3', 'E4'],
+        "B": ['F#_2', 'B_2', 'F#_3', 'F#_4'],
+        "C": ['C_3', 'E_3', 'C_4', 'E_4'],
+        "D": ['D_3', 'A_3'],
+        "E": ['E_2', 'B_2', 'B_3', 'E_4'],
+        "F": ['F_2', 'C_3', 'C_4', 'F_4'],
+        "G": ['G_2', 'B_2', 'D_3', 'G_3', 'B_3']
+    }
+    return keys_freq
+
+# 기타 코드에 대한 딕셔너리 생성
 def get_all_guitar_chords_freq():
     guitar_chords_freq = {
-        "A": [82.41, 110.00, 164.81, 220.00, 277.18, 329.63],
-        "Am": [82.41, 110.00, 164.81, 220.00, 261.63, 329.63],
-        "A7": [82.41, 110.00, 164.81, 220.00, 277.18, 391.00, 329.63],
-        "A#": [116.54, 155.56, 174.61, 233.08, 311.13, 349.23],
-        "A#m": [116.54, 155.56, 174.61, 233.08, 277.18, 349.23],
-        "A#7": [116.54, 155.56, 174.61, 233.08, 311.13, 415.30],
+        "A": [110.00, 164.81, 220.00, 277.18, 329.63],
+        "Am": [110.00, 164.81, 220.00, 261.63, 329.63],
+        "A7": [110.00, 164.81, 196.00, 277.18, 329.63],
         "B": [92.50, 123.47, 185.00, 246.94, 311.13, 369.99],
         "Bm": [92.50, 123.47, 185.00, 246.94, 293.66, 369.99],
-        "B7": [92.50, 123.47, 185.00, 220.00, 293.66, 369.99],
-        "C": [82.41, 130.81, 164.81, 196.00, 261.63, 329.63],
-        "Cm": [82.41, 130.81, 196.00, 207.65, 261.63, 311.13],
-        "C7": [82.41, 130.81, 164.81, 196.00, 233.08, 261.63, 329.63],
-        "C#": [138.59, 174.61, 207.65, 277.18, 349.23, 415.30],
-        "C#m": [138.59, 174.61, 207.65, 277.18, 329.63, 415.30],
-        "C#7": [138.59, 174.61, 207.65, 246.94, 277.18, 349.23],
-        "D": [146.83, 220.00, 293.66, 369.99, 440.00, 587.33],
-        "Dm": [146.83, 220.00, 293.66, 349.23, 440.00, 587.33],
-        "D7": [146.83, 220.00, 293.66, 261.63, 369.99, 440.00],
-        "D#": [155.56, 207.65, 233.08, 311.13, 415.30, 466.16],
-        "D#m": [155.56, 207.65, 233.08, 311.13, 369.99, 466.16],
-        "D#7": [155.56, 207.65, 233.08, 277.18, 311.13, 415.30],
+        "B7": [92.50, 123.47, 185.00, 220.00, 311.13, 369.99],
+        "C": [130.81, 164.81, 196.00, 261.63, 329.63],
+        "C7": [130.81, 164.81, 233.08, 261.63, 329.63],
+        "D": [146.83, 220.00, 293.66, 369.99],
+        "Dm": [146.83, 220.00, 293.66, 349.23],
+        "D7": [146.83, 220.00, 261.63, 369.99],
         "E": [82.41, 123.47, 164.81, 207.65, 246.94, 329.63],
         "Em": [82.41, 123.47, 164.81, 196.00, 246.94, 329.63],
-        "E7": [82.41, 123.47, 164.81, 207.65, 293.66, 329.63],
-        "F": [87.31, 110.00, 174.61, 220.00, 261.63, 349.23],
-        "Fm": [87.31, 110.00, 174.61, 207.65, 261.63, 349.23],
-        "F7": [87.31, 110.00, 174.61, 220.00, 311.13, 349.23],
-        "F#": [92.50, 123.47, 138.59, 185.00, 246.94, 277.18],
-        "F#m": [92.50, 123.47, 110.00, 185.00, 246.94, 277.18],
-        "F#7": [92.50, 123.47, 138.59, 164.81, 185.00, 233.08],
+        "E7": [82.41, 123.47, 146.83, 207.65, 246.94, 329.63],
+        "F": [87.31, 130.81, 174.61, 220.00, 261.63, 349.23],
+        "Fm": [87.31, 130.81, 174.61, 207.65, 261.63, 349.23],
+        "F7": [87.31, 130.81, 155.56, 220.00, 261.63, 349.23],
         "G": [98.00, 123.47, 146.83, 196.00, 246.94, 392.00],
-        "Gm": [98.00, 116.54, 146.83, 196.00, 233.08, 392.00],
-        "G7": [98.00, 123.47, 146.83, 174.61, 246.94, 349.23],
-        "G#": [103.83, 130.81, 155.56, 207.65, 261.63, 311.13],
-        "G#m": [103.83, 130.81, 155.56, 207.65, 246.94, 311.13],
-        "G#7": [103.83, 130.81, 155.56, 185.00, 207.65, 246.94]
+        "G7": [98.00, 123.47, 146.83, 196.00, 246.94, 349.23]
     }
     return guitar_chords_freq 
 
-# HPS를 통해 얻은 주파수와 진폭을 가지고, 주파수 필터링
-def filter_frequencies_by_threshold(all_freq, threshold, ordered_note_freq):
-    filtered_freqs = []
-    for freq_info in all_freq:
-        freq, amplitude = freq_info
-        if amplitude >= threshold:
-            note_name = find_nearest_note(ordered_note_freq, freq)
-            filtered_freqs.append((freq, amplitude, note_name))
+# 기타 조 판단에 중요한 list 생성
+def get_unique_key():
+    unique_notes = ['A_2', 'E_3', 'E_4', 'F#2', 
+                    'B_2', 'F#_3', 'F#_4', 'C_3', 
+                    'C_4', 'D_3', 'A_3', 'E_2', 
+                    'B_3', 'F_2', 'F_4', 'G_2', 'D_3', 'G_3']
+    return unique_notes
 
-    return filtered_freqs
+# chunk별 상위 top_n개 주파수 뽑기
+def get_top_frequencies(frequencies, top_n):
+    top_freqs = sorted(frequencies, key=lambda x: x[1], reverse=True)[:top_n]
+    return top_freqs
+
+# 기타 조 판단에 해당하는 음 저장하기
+def find_unique_notes(ordered_note_freq, top_freqs, unique_notes):
+    found_notes = []
+    
+    # 주어진 상위 주파수들 중 unique_notes에 해당하는 음 찾기
+    for freq in top_freqs:
+        note_name = find_nearest_note(ordered_note_freq, freq[0])  # 주파수로부터 가장 가까운 음 찾기
+        if note_name in unique_notes and note_name not in found_notes:  # unique_notes 목록에 해당하는지 확인
+            found_notes.append(note_name)
+    
+    return found_notes
+
+# 기타 조 추정
+def find_nearest_key(found_notes, keys_freq):
+    # found_notes가 비어있으면, 'null' 반환
+    if not found_notes:
+        return 'null'
+    
+    # 각 조와 found_notes 간의 일치도 계산
+    best_match = None
+    best_match_score = -1  # 일치하는 음의 개수를 저장할 변수
+
+    for key, notes in keys_freq.items():
+        match_score = sum(note in found_notes for note in notes)  # found_notes에 포함된 음의 개수를 계산
+        
+        if match_score > best_match_score:  # 현재 조가 이전 조보다 더 많은 일치를 가지면
+            best_match = key  # 현재 조를 최고 일치로 업데이트
+            best_match_score = match_score  # 최고 일치 점수 업데이트
+    
+    return best_match  # 가장 일치율이 높은 조 반환
 
 # 기타 코드 추정 
 def find_nearest_chord(guitar_chords_freq):
-    return null
+    return 0
 
 def PitchSpectralHps(X, freq_buckets, f_s, buffer_rms):
 
@@ -338,6 +366,8 @@ def to_str_f4(value):
 def main():
     print("\nPolyphonic note detector\n")
     
+    unique_notes = get_unique_key()
+    keys_freq = get_all_key_freq()
     guitar_chords_freq = get_all_guitar_chords_freq()
     ordered_note_freq = get_all_notes_freq()
     # print(ordered_note_freq)
@@ -361,25 +391,31 @@ def main():
         buffer_rms = np.sqrt(np.mean(chunk**2))
 
         all_freqs = PitchSpectralHps(fft_res, fft_freq, sample_rate_file, buffer_rms)
-        print(all_freqs)
+        # print(all_freqs)
 
-        print("------------------------------")
+        # get_top_frequencies 함수를 사용하여 상위 6개의 주파수를 선택
+        top_freqs = get_top_frequencies(all_freqs, 6)
+        print("top_freqs :", top_freqs)
+        for freq in top_freqs:
+            note_name = find_nearest_note(ordered_note_freq, freq[0])
+            print("=> freq: " + to_str_f(freq[0]) + " Hz  value: " + to_str_f(freq[1]) + " note_name: " + note_name)
+
+        # print("------------------------------")
         for freq in all_freqs:
             note_name = find_nearest_note(ordered_note_freq, freq[0])
-            # note_index = [idx for idx, note in enumerate(ordered_note_freq) if note[0] == note_name][0]  # 노트 이름에 해당하는 인덱스 찾기
-            # print("note_name ", note_name)
-            # print("note_index ", note_index)
+            # print("=> freq: " + to_str_f(freq[0]) + " Hz  value: " + to_str_f(freq[1]) + " note_name: " + note_name)
 
-            print("=> freq: " + to_str_f(freq[0]) + " Hz  value: " + to_str_f(freq[1]) + " note_name: " + note_name )
+        # 상위 6개의 주파수를 이용하여 가장 가까운 조를 찾기
+        found_notes = find_unique_notes(ordered_note_freq, top_freqs, unique_notes)
+        print(found_notes)
 
-        ## Uncomment to show the graph of the result of the FFT with the
-        ## correct frequencies in the legend. 
-        # N = fft_res_len
-        # fft_freq_interval = fft_freq[: N // 4]
-        # fft_res_interval = fft_res[: N // 4]
-        # fig, ax = plt.subplots()
-        # ax.plot(fft_freq_interval, 2.0/N * np.abs(fft_res_interval))
-        # plt.show()
+        nearest_key = find_nearest_key(found_notes, keys_freq)
+        print(nearest_key)
+
+        # 각 주파수에 대해 해당하는 기타 조 찾기
+        # for freq, _ in top_freqs:
+        #     key = find_key_for_freq(freq, keys_freq)
+        #     print(f"freq: {freq:.2f} Hz -> key: {key}")
 
         count += 1
 
