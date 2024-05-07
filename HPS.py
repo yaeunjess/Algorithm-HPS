@@ -14,7 +14,7 @@ import math
 import tensorflow as tf
 
 path     = "./"
-filename = 'Am_AcusticPlug3_3.wav'
+filename = 'Am-D.wav'
 
 note_threshold = 5_000.0    # 120   # 50_000.0   #  3_000.0
 
