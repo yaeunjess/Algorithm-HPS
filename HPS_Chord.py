@@ -13,13 +13,13 @@ import wave
 import math
 
 path     = "./"
-filename = 'AE-DUDUDXDU.wav' 
+filename = '100-A-DUDU.wav' 
 
 note_threshold = 5_000.0    # 120   # 50_000.0   #  3_000.0
 
 # Parameters
 sample_rate  = 44100                     # Sampling Frequency
-fft_len      = 8192  # 8820-100bpm # 8192-110bpm    # Length of the FFT window
+fft_len      = 8820  # 8820-100bpm # 8192-110bpm    # Length of the FFT window
 overlap      = 0.5                       # Hop overlap percentage between windows
 hop_length   = int(fft_len*(1-overlap))  # Number of samples between successive frames
 
@@ -426,6 +426,35 @@ def find_chunks_with_peak_values(all_values):
 
     return peak_chunks
 
+# 기타 박자 여음 처리를 위한 앞뒤 value 차이 계산
+def calculate_value_differences(values_list):
+    differences_list = []
+    for values in values_list:
+        if len(values) == 3: 
+            diff1 = abs(values[1] - values[0])
+            diff2 = abs(values[2] - values[1])
+            differences_list.append(diff1)
+            # differences_list.append([diff1, diff2])
+        else:
+            differences_list.append([])
+    
+    return differences_list
+
+# 기타 박자 여음 처리를 위한 임계값을 정해서 이보다 큰 것만 담음
+def remove_small_values(values):
+    if len(values) == 0:
+        return values
+    
+    # 가장 큰 값의 0.5% 계산
+    max_value = max(values)
+    threshold = max_value * 0.03
+    print(threshold)
+    
+    # 임계값보다 큰 값들만 포함하여 새로운 리스트 생성
+    filtered_values = [value for value in values if value > threshold]
+
+    return filtered_values
+
 def PitchSpectralHps(X, freq_buckets, f_s, buffer_rms):
 
     """
@@ -540,7 +569,7 @@ def main():
     all_top_results = [] # [(chunk_num, freq, value, note_name), ...] 
     all_values = []      # chunk별 상위 1개의 value 모음, [(chunk_num, value), ....]
     all_keys = []        # 추정한 조 모음, [(chunk_num, nearest_key), ...]
-    all_chords = []      # 추정한 코드 모음, 
+    all_chords = []      # 추정한 코드 모음, ['G', 'null', ...]
     chunk_num = 0 
     top_n = 6
 
@@ -672,9 +701,9 @@ def main():
     print(numbered_final_chord_list)
 
 
-    print("\n---------------코드 및 박자 결과----------------")
+    print("\n---------------박자 여음 처리 이전, 코드 및 박자 결과----------------")
     # 박자 체크
-    results = [1 if i in peak_chunk_nums else 0 for i in range(1, chunk_num+1)]
+    results = [1 if i in peak_chunk_nums else 0 for i in range(0, chunk_num+1)]
     print(results)
     # 코드 체크
     chord_pointer = 0
@@ -686,6 +715,38 @@ def main():
                 results[i] = numbered_final_chord_list[chord_pointer]
             chord_pointer = chord_pointer + 1
     # 코드와 박자
+    print(results)
+
+    print("\n---------------박자 여음 처리 과정----------------")
+    # 0이 아닌 chunk 뒤로 2개까지의 value 모아서, 총 3개의 value로 이중리스트
+    non_zero_indices = [i for i, val in enumerate(results) if val != 0]
+    selected_chunks_values = []
+    for index in non_zero_indices:
+        chunk_nums_to_check = [index, index + 1, index + 2]
+        temp_values = []
+        for chunk_num in chunk_nums_to_check:
+            if chunk_num <= len(all_values):
+                temp_values.append(all_values[chunk_num - 1][1])  
+        selected_chunks_values.append(temp_values)
+    print(selected_chunks_values)
+
+    # 앞, 중간 chunk value 값 차이들 저장
+    differences = calculate_value_differences(selected_chunks_values)
+    print(differences)
+
+    # 임계값 설정
+    filtered_values = remove_small_values(differences)
+    print(filtered_values)
+
+    
+    print("\n---------------코드 및 박자 결과----------------")
+    # for i, difference in enumerate(differences):
+    #     if difference <= filtered_values:
+    #         results[non_zero_indices[i]] = 0
+    # print(results)
+    for i, difference in enumerate(differences):
+        if difference not in filtered_values:
+            results[non_zero_indices[i]] = 0
     print(results)
 
 if __name__ == "__main__":
